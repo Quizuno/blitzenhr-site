@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BlitzenHR: staff scheduling for restaurants</title>
+<meta name="description" content="BlitzenHR builds your weekly staff schedule and hourly position sheet from availability, time off, training and your own rules. Fair across weeks, done in seconds.">
+<meta property="og:title" content="BlitzenHR">
+<meta property="og:description" content="Automatic staff scheduling for restaurants and other shift-based businesses.">
+<meta property="og:url" content="https://blitzenhr.com/">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#F4F7FB">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.5 1.5 4 13.5h6.5L9 22.5l10.5-12.5H13z' fill='%23FFC21A' stroke='%2314213D' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F7FB;
+  --paper: #FFFFFF;
+  --ink: #14213D;
+  --muted: #4A5872;
+  --storm: #2B4C7E;
+  --rule: #C9D6E9;
+  --cell: #E3ECF8;
+  --bolt: #FFC21A;
+  --on-bolt: #14213D;
+  --bolt-edge: #14213D;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1828;
+    --paper: #142238;
+    --ink: #E9EFF8;
+    --muted: #A7B6CC;
+    --storm: #9DBBE6;
+    --rule: #2A3C5A;
+    --cell: #1D3050;
+    --bolt-edge: #A87C00;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Archivo", system-ui, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.55;
+  font-stretch: 100%;
+}
+a { color: var(--storm); }
+a:focus-visible, .button:focus-visible {
+  outline: 3px solid var(--storm);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 40px);
+}
+
+/* header */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+}
+.mark svg { width: 26px; height: 26px; flex: none; }
+.top-link {
+  font-weight: 600;
+  text-decoration: none;
+}
+.top-link:hover { text-decoration: underline; }
+
+/* hero */
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+  padding-top: clamp(28px, 6vw, 72px);
+  padding-bottom: clamp(56px, 8vw, 104px);
+}
+h1 {
+  margin: 0 0 24px;
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(2.3rem, 4.6vw + 1rem, 4.6rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.lede {
+  margin: 0 0 32px;
+  max-width: 34em;
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+.button {
+  display: inline-block;
+  padding: 14px 24px;
+  background: var(--bolt);
+  color: var(--on-bolt);
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 6px;
+  box-shadow: 0 2px 0 var(--bolt-edge);
+}
+.button:hover { transform: translateY(-1px); box-shadow: 0 3px 0 var(--bolt-edge); }
+.button:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--bolt-edge); }
+
+/* the hourly sheet */
+.sheet {
+  margin: 0;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 18px 18px 14px;
+}
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.sheet-day {
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.sheet-kind {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-stretch: 75%;
+  font-size: 1rem;
+}
+.sheet th, .sheet td {
+  padding: 7px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sheet thead th {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border-bottom: 2px solid var(--ink);
+}
+.sheet thead th:first-child, .sheet tbody th { width: 3.2em; }
+.sheet tbody th {
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.sheet td { font-weight: 600; }
+.sheet td.on { background: var(--cell); background-clip: padding-box; border-left: 2px solid var(--paper); }
+.sheet td.off { color: var(--rule); }
+.sheet figcaption {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+tbody tr:nth-child(1) { --r: 0; } tbody tr:nth-child(2) { --r: 1; }
+tbody tr:nth-child(3) { --r: 2; } tbody tr:nth-child(4) { --r: 3; }
+tbody tr:nth-child(5) { --r: 4; } tbody tr:nth-child(6) { --r: 5; }
+tbody tr:nth-child(7) { --r: 6; }
+td:nth-child(2) { --c: 0; } td:nth-child(3) { --c: 1; }
+td:nth-child(4) { --c: 2; } td:nth-child(5) { --c: 3; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet td.on {
+    animation: strike 520ms ease-out both;
+    animation-delay: calc(350ms + var(--r) * 95ms + var(--c) * 30ms);
+  }
+  .sheet td.off {
+    animation: appear 300ms ease-out both;
+    animation-delay: calc(350ms + var(--r) * 95ms + var(--c) * 30ms);
+  }
+}
+@keyframes strike {
+  0%   { background-color: transparent; color: transparent; }
+  25%  { background-color: var(--bolt); color: var(--on-bolt); }
+  100% { background-color: var(--cell); color: var(--ink); }
+}
+@keyframes appear {
+  from { color: transparent; }
+}
+
+/* sections */
+.band {
+  padding-top: clamp(56px, 8vw, 96px);
+  padding-bottom: clamp(56px, 8vw, 96px);
+}
+h2 {
+  margin: 0 0 36px;
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(1.7rem, 2vw + 1rem, 2.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+h3 {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+p { margin: 0; }
+
+.does {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.does li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 8px 48px;
+  padding: 28px 0;
+  border-top: 1px solid var(--rule);
+}
+.does li:last-child { border-bottom: 1px solid var(--rule); }
+.does h3 { margin: 0; }
+.does p { max-width: 36em; color: var(--muted); }
+
+.views {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+.view h3 {
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--ink);
+}
+.view ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.view li {
+  padding: 10px 0 10px 26px;
+  position: relative;
+  color: var(--muted);
+}
+.view li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.95em;
+  width: 12px;
+  height: 2px;
+  background: var(--storm);
+}
+
+.for p {
+  max-width: 30em;
+  font-stretch: 112%;
+  font-size: clamp(1.3rem, 1vw + 1rem, 1.6rem);
+  line-height: 1.4;
+}
+
+.contact p {
+  max-width: 34em;
+  margin-bottom: 28px;
+  color: var(--muted);
+}
+
+footer {
+  padding-top: 28px;
+  padding-bottom: 40px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 820px) {
+  .hero { grid-template-columns: 1fr; }
+  .does li { grid-template-columns: 1fr; }
+  .views { grid-template-columns: 1fr; gap: 36px; }
+}
+@media (max-width: 400px) {
+  .sheet { padding: 14px 10px 10px; }
+  .sheet th, .sheet td { padding: 6px 4px; }
+  .sheet table { font-size: 0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="wrap top">
+  <a class="mark" href="/" aria-label="BlitzenHR home">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 1.5 4 13.5h6.5L9 22.5l10.5-12.5H13z" fill="#FFC21A" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    BlitzenHR
+  </a>
+  <a class="top-link" href="#contact">Email us</a>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <div>
+      <h1>Fair schedules, lightning fast.</h1>
+      <p class="lede">BlitzenHR builds your weekly staff schedule and the hourly position sheet from your team's availability, time off, training and your own rules. Made for restaurants and other businesses that run on shifts.</p>
+      <a class="button" href="mailto:hello@blitzenhr.com?subject=BlitzenHR">Email us</a>
+    </div>
+
+    <figure class="sheet" aria-label="Example hourly position sheet">
+      <div class="sheet-head">
+        <span class="sheet-day">Saturday</span>
+        <span class="sheet-kind">Hourly positions</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th scope="col">Hour</th><th scope="col">Register</th><th scope="col">Drive-thru</th><th scope="col">Grill</th><th scope="col">Prep</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">11</th><td class="on">Maya</td><td class="on">Luis</td><td class="on">Ben</td><td class="on">Priya</td></tr>
+          <tr><th scope="row">12</th><td class="on">Maya</td><td class="on">Luis</td><td class="on">Ben</td><td class="on">Priya</td></tr>
+          <tr><th scope="row">1</th><td class="on">Tess</td><td class="on">Luis</td><td class="on">Ben</td><td class="on">Priya</td></tr>
+          <tr><th scope="row">2</th><td class="on">Tess</td><td class="on">Omar</td><td class="on">Ben</td><td class="off">–</td></tr>
+          <tr><th scope="row">3</th><td class="on">Tess</td><td class="on">Omar</td><td class="on">Jae</td><td class="off">–</td></tr>
+          <tr><th scope="row">4</th><td class="on">Nora</td><td class="on">Omar</td><td class="on">Jae</td><td class="on">Eli</td></tr>
+          <tr><th scope="row">5</th><td class="on">Nora</td><td class="on">Rosa</td><td class="on">Jae</td><td class="on">Eli</td></tr>
+        </tbody>
+      </table>
+      <figcaption>Filled in from Saturday's schedule. If someone calls off, rebuild it around who's here.</figcaption>
+    </figure>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>What BlitzenHR does</h2>
+      <ul class="does">
+        <li>
+          <h3>Builds the weekly schedule</h3>
+          <p>It reads each person's availability, approved time off and training, then follows the rules you set: how many people each shift needs, who can close, and the things you'd otherwise keep track of in your head.</p>
+        </li>
+        <li>
+          <h3>Keeps it fair, week after week</h3>
+          <p>Hard shifts, closes and hours are spread evenly over many weeks, not just this one. Nobody goes over 40 hours unless you put them there yourself.</p>
+        </li>
+        <li>
+          <h3>Writes the hourly position sheet</h3>
+          <p>Who's on which station each hour of every shift. The sheet you used to fill in by hand before the rush is ready as soon as the schedule is.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>One schedule, two views</h2>
+      <div class="views">
+        <div class="view">
+          <h3>For managers</h3>
+          <ul>
+            <li>See the whole week at once.</li>
+            <li>Mark a no-show or add last-minute help.</li>
+            <li>Rebuild the hourly sheet around whoever is actually there.</li>
+          </ul>
+        </div>
+        <div class="view">
+          <h3>For employees</h3>
+          <ul>
+            <li>See your upcoming shifts.</li>
+            <li>Request time off.</li>
+            <li>Call off with a reason, so your manager knows right away.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band for">
+    <div class="wrap">
+      <p>Built for restaurants, cafés, ice cream shops and any business that runs on shifts.</p>
+    </div>
+  </section>
+
+  <section class="band contact" id="contact">
+    <div class="wrap">
+      <h2>Try it with your own schedule</h2>
+      <p>Tell us a little about your business and how many people you schedule. We'll show you BlitzenHR running on your own shifts.</p>
+      <a class="button" href="mailto:hello@blitzenhr.com?subject=BlitzenHR">Email hello@blitzenhr.com</a>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  © 2026 BlitzenHR. Blitzen is German for lightning.
+</footer>
+
+</body>
+</html>
